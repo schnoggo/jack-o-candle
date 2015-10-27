@@ -19,7 +19,8 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(16, 2, NEO_GRB + NEO_KHZ800);
 */
 
 #define NUMBER_OF_FLAMES 5
-#define SCALERVAL 256*3
+
+uint32_t rez_range = 256*3;
 #define D_ false
 
 // console buttons:
@@ -35,9 +36,9 @@ struct flame_element{
   unsigned long rgb[3]; //reusable temporary array
   uint8_t scaleD_rgb[3];
   byte acc;
-  
- const int flamecolors[22][3] = {
  
+ #define SCALERVAL 256*3
+ const int flamecolors[22][3] = {
 { SCALERVAL, 0,  0},
 { SCALERVAL, 0,  0},
 { SCALERVAL, 0,  0},
@@ -71,10 +72,10 @@ const int speeds[30] ={
   
   
 void setup() {
-  if (D_){
+ // if (D_){
     Serial.begin(9600);
     Serial.println("STARTUP");
-  }
+//  }
   strip.begin();
   strip.show(); // Initialize all pixels to 'off'
   randomSeed(analogRead(4));
@@ -84,32 +85,39 @@ void setup() {
 
 void loop() {
 
-  for(byte i=0; i<NUMBER_OF_FLAMES; i++) {
-    switch(flames[i].state){
+ for(byte flame_count=0; flame_count<NUMBER_OF_FLAMES; flame_count++) {
+ // for(byte flame_count=0; flame_count<1; flame_count++) {
+    switch(flames[flame_count].state){
       case 0: // reset
-      CreateNewFlame(i);
+        CreateNewFlame(flame_count);
       break;
       
       case 1: //increasing
-        new_brightness = flames[i].brightness + flames[i].step;
-        if (new_brightness > flames[i].max_brightness){
-          flames[i].state = 2;
+        new_brightness = flames[flame_count].brightness + flames[flame_count].step;
+        if (new_brightness > flames[flame_count].max_brightness){
+          UpdateFlameColor(flame_count, flames[flame_count].max_brightness);
+          flames[flame_count].brightness = flames[flame_count].max_brightness;
+          flames[flame_count].step = GetStepSize(); // pick a different speed for flame going out
+          flames[flame_count].state = 2;
         } else {
-          UpdateFlameColor(i, new_brightness);
-          flames[i].brightness = new_brightness;
+          UpdateFlameColor(flame_count, new_brightness);
+          flames[flame_count].brightness = new_brightness;
         }
       
       break;
       
       
       case 2: //decreasing
-        new_brightness = flames[i].brightness - flames[i].step;
+        new_brightness = flames[flame_count].brightness - flames[flame_count].step;
+       //   if ((0 == flame_count)){  Serial.println(new_brightness);}
 
         if (new_brightness <1){
-          flames[i].state = 0; // bottomed out - reset to next flame
+          flames[flame_count].state = 0; // bottomed out - reset to next flame
+          flames[flame_count].brightness = 0;
+           UpdateFlameColor(flame_count, 0);
         } else {
-          UpdateFlameColor(i, new_brightness);
-           flames[i].brightness = new_brightness;
+          UpdateFlameColor(flame_count, new_brightness);
+           flames[flame_count].brightness = new_brightness;
         }
       break;
     }
@@ -133,22 +141,35 @@ void InitFlames(){
 void UpdateFlameColor(byte flame_num, int new_brightness){
 // 
   uint32_t c = 0;
-  new_brightness = min(new_brightness, flames[flame_num].max_brightness);
   uint32_t color_channel_value;
+  byte rgb_channel;
+  
+  new_brightness = min(new_brightness, flames[flame_num].max_brightness);
+  
   if ((D_) && (0 == flame_num)){  Serial.print("pre:( ");}
 
-  for(byte i=0; i<3; i++) {
-    color_channel_value = flames[flame_num].rgb[i];
+  for(byte rgb_channel=0; rgb_channel<3; rgb_channel++) {
+    color_channel_value = flames[flame_num].rgb[rgb_channel];
     if ((D_) && (0 == flame_num)){ Serial.print(color_channel_value); }
-    color_channel_value = color_channel_value * new_brightness; // keep it long
-    color_channel_value = color_channel_value/SCALERVAL;
-    rgb[i] = max(0L,color_channel_value);
-    if ((D_) && (0 == flame_num)){
-      Serial.print("-"); 
-      Serial.print(rgb[i]); 
+    color_channel_value = color_channel_value * (uint32_t)new_brightness; // keep it long
+        if ((D_) && (0 == flame_num)){
+      Serial.print(" [xNB="); 
+      Serial.print(color_channel_value); 
       Serial.print(", ");
     }
-  }
+    color_channel_value = color_channel_value/(uint32_t)rez_range;
+    if ((D_) && (0 == flame_num)){
+      Serial.print(" /SCALE="); 
+      Serial.print(color_channel_value); 
+      Serial.print("]");
+    }
+    rgb[rgb_channel] = max(0L,color_channel_value);
+    if ((D_) && (0 == flame_num)){
+      Serial.print("-"); 
+      Serial.print(rgb[rgb_channel]); 
+      Serial.print(", ");
+    }
+  } // step through R G B
 
   if ((D_) && (0 == flame_num)){
     Serial.print(") bright:");
@@ -159,10 +180,11 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
   }
 
 
-  // this version just divides 'em up: (Eventually get higher precision using all three)
+  // spread possible values of 0 -768 across 3 pixels
   if ((D_) && (0 == flame_num)){
-    Serial.print("scaled: ");
-    Serial.print(" (");
+  //  Serial.print("scaled: ");
+   // Serial.print(" (");
+   Serial.println(" ");
   }
 
   for(byte sub_pixel=0; sub_pixel<3; sub_pixel++) {
@@ -183,10 +205,10 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
 
 
 void CreateNewFlame(byte flame_num){
-
-  flames[flame_num].step = speeds[random(30)];
-  flames[flame_num].max_brightness = SCALERVAL/(random(5)+1);
-//  flames[flame_num].max_brightness = random(SCALERVAL/4) +  random(SCALERVAL/4) + random(SCALERVAL/4) + SCALERVAL/4 +1;
+Serial.println("new flame");
+  flames[flame_num].step = GetStepSize();
+//  flames[flame_num].max_brightness = rez_range/(random(5)+1);
+  flames[flame_num].max_brightness = random(rez_range/4) +  random(rez_range/4) + random(rez_range/4) + rez_range/4 +1;
   flames[flame_num].brightness = 0;
   flames[flame_num].state = 1;
   byte color_index = random(22);
@@ -209,4 +231,7 @@ void CreateNewFlame(byte flame_num){
   */
 }
 
-
+int GetStepSize(){
+ // return speeds[random(30)];
+return random(70);
+}
