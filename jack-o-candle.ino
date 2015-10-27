@@ -167,16 +167,27 @@ void InitFlames(){
 void UpdateFlameColor(byte flame_num, int new_brightness){
   uint32_t c = 0;
   int color_channel_value;
+      if (0 == flame_num){  Serial.print("pre:( ");}
+   
+
   for(byte i=0; i<3; i++) {
     color_channel_value = flames[flame_num].rgb[i];
-    rgb[i] = (color_channel_value * SCALERVAL)/new_brightness;
-  
+     if (0 == flame_num){ Serial.print(color_channel_value); Serial.print(", ");}
+    rgb[i] = (color_channel_value * new_brightness)/SCALERVAL;
   }
+    if (0 == flame_num){  Serial.print(") ");}
+    
   // this version just divides 'em up:
+  if (0 == flame_num){
+   Serial.print("scaled: ");
+//   Serial.print(flame_num);
+   Serial.print(" (");
+   }
   for(byte i=0; i<3; i++) {
     scaled_rgb[i] = rgb[i]/3; // max this at some point
+    if (0 == flame_num){ Serial.print(scaled_rgb[i]); Serial.print(", ");}
   }
-  
+   if (0 == flame_num){ Serial.println(")");}
 
   c = strip.Color(scaled_rgb[0],scaled_rgb[1], scaled_rgb[2]);
   for(byte i=flame_num*3; i<(flame_num*3)+3; i++) {
