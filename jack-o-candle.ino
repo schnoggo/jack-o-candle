@@ -34,6 +34,7 @@ struct flame_element{
   int new_brightness = 0;
   unsigned long rgb[3]; //reusable temporary array
   uint8_t scaleD_rgb[3];
+  byte acc;
   
  const int flamecolors[22][3] = {
  
@@ -49,15 +50,15 @@ struct flame_element{
 { SCALERVAL, SCALERVAL*.4,  0},
 { SCALERVAL, SCALERVAL*.4,  0},
 { SCALERVAL, SCALERVAL*.4,  0},
-{ SCALERVAL, SCALERVAL*.4,  0},
-{ SCALERVAL, SCALERVAL*.4,  0},
 { SCALERVAL, SCALERVAL*.3,  0},
 { SCALERVAL, SCALERVAL*.3,  0},
 { SCALERVAL, SCALERVAL*.3,  0},
 { SCALERVAL, SCALERVAL*.3,  0},
 { SCALERVAL, SCALERVAL*.3,  0},
 { SCALERVAL, SCALERVAL*.3,  0},
-{ 0, SCALERVAL*.2,  SCALERVAL},
+{ SCALERVAL, SCALERVAL*.3,  },
+{ SCALERVAL, SCALERVAL*.3,  SCALERVAL}, // white
+{ 0, SCALERVAL*.2,  SCALERVAL}, // that one blue flame
 { SCALERVAL,  SCALERVAL*.3,  SCALERVAL*.5}
 };
 
@@ -164,16 +165,20 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
     Serial.print(" (");
   }
 
-  for(byte i=0; i<3; i++) {
-    scaleD_rgb[i] = rgb[i]/3; // max this at some point
-    if ((D_) && (0 == flame_num)){ Serial.print(scaleD_rgb[i]); Serial.print(", ");}
+  for(byte sub_pixel=0; sub_pixel<3; sub_pixel++) {
+    for(byte i=0; i<3; i++) { // rgb
+      acc = rgb[i]/3;
+      byte d = rgb[i]%3;
+      if (sub_pixel < d){
+        acc ++;
+      }
+      scaleD_rgb[i] = acc;
+      
+    }
+    c = strip.Color(scaleD_rgb[0],scaleD_rgb[1], scaleD_rgb[2]);
+    strip.setPixelColor(flame_num*3 + sub_pixel, c);
   }
-  if ((D_) && (0 == flame_num)){ Serial.println(")");}
-
-  c = strip.Color(scaleD_rgb[0],scaleD_rgb[1], scaleD_rgb[2]);
-  for(byte i=flame_num*3; i<(flame_num*3)+3; i++) {
-    strip.setPixelColor(i, c);
-  }
+  
 }
 
 
@@ -181,6 +186,7 @@ void CreateNewFlame(byte flame_num){
 
   flames[flame_num].step = speeds[random(30)];
   flames[flame_num].max_brightness = SCALERVAL/(random(5)+1);
+//  flames[flame_num].max_brightness = random(SCALERVAL/4) +  random(SCALERVAL/4) + random(SCALERVAL/4) + SCALERVAL/4 +1;
   flames[flame_num].brightness = 0;
   flames[flame_num].state = 1;
   byte color_index = random(22);
