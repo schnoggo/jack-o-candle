@@ -26,12 +26,12 @@ struct flame_element{
   int brightness;
   int step;
   int max_brightness;
-  int rgb[3];
+  long rgb[3];
   byte state;
   } flames[5];
   
   int new_brightness = 0;
-  int rgb[3]; //reusable temporary array
+  unsigned long rgb[3]; //reusable temporary array
   uint8_t scaled_rgb[3];
   
  const int flamecolors[12][3] = {
@@ -45,18 +45,18 @@ struct flame_element{
 { SCALERVAL, 0,  0},
 { SCALERVAL, 0,  0},
 */
-{ SCALERVAL, SCALERVAL*.02,  },
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0},
-{ SCALERVAL, SCALERVAL*.02,  0}
+{ SCALERVAL, SCALERVAL*.5,  },
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0},
+{ SCALERVAL, SCALERVAL*.5,  0}
 /*
 { SCALERVAL, SCALERVAL*.3,  0},
 { SCALERVAL, SCALERVAL*.3,  0},
@@ -166,17 +166,34 @@ void InitFlames(){
 
 void UpdateFlameColor(byte flame_num, int new_brightness){
   uint32_t c = 0;
-  int color_channel_value;
+  new_brightness = min(new_brightness, flames[flame_num].max_brightness);
+  uint32_t color_channel_value;
       if (0 == flame_num){  Serial.print("pre:( ");}
    
-
   for(byte i=0; i<3; i++) {
     color_channel_value = flames[flame_num].rgb[i];
-     if (0 == flame_num){ Serial.print(color_channel_value); Serial.print(", ");}
-    rgb[i] = (color_channel_value * new_brightness)/SCALERVAL;
+     if (0 == flame_num){ Serial.print(color_channel_value); }
+     
+     color_channel_value = color_channel_value * new_brightness; // keep it long
+     color_channel_value = color_channel_value/SCALERVAL;
+    rgb[i] = max(0L,color_channel_value);
+     if (0 == flame_num){
+      Serial.print("-"); 
+      Serial.print(rgb[i]); 
+      Serial.print(", ");
+      }
+     
   }
-    if (0 == flame_num){  Serial.print(") ");}
+    if (0 == flame_num){  Serial.print(") bright:");}
+    if (0 == flame_num){  Serial.print(new_brightness);}
+    if (0 == flame_num){  Serial.print("/");}
+     if (0 == flame_num){  Serial.print(flames[flame_num].max_brightness);}
     
+     if (0 == flame_num){  Serial.print("  ");}
+     
+     
+     
+     
   // this version just divides 'em up:
   if (0 == flame_num){
    Serial.print("scaled: ");
@@ -225,32 +242,4 @@ void CreateNewFlame(byte flame_num){
    */
 }
 
-
-
-// Slightly different, this makes the rainbow equally distributed throughout
-void rainbowCycle(uint8_t wait) {
-  uint16_t i, j;
-
-  for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
-    for(i=0; i< strip.numPixels(); i++) {
-      strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
-    }
-    strip.show();
-    delay(wait);
-  }
-}
-
-// Input a value 0 to 255 to get a color value.
-// The colours are a transition r - g - b - back to r.
-uint32_t Wheel(byte WheelPos) {
-  if(WheelPos < 85) {
-   return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
-  } else if(WheelPos < 170) {
-   WheelPos -= 85;
-   return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
-  } else {
-   WheelPos -= 170;
-   return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
-  }
-}
 
