@@ -18,7 +18,8 @@ Adafruit_NeoPixel strip = Adafruit_NeoPixel(16, 2, NEO_GRB + NEO_KHZ800);
 
 */
 
-#define NUMBER_OF_FLAMES 5
+#define NUMBER_OF_FLAMES 5 // depends on number of neopixel triplets. 5 for 16 NeoPixel ring. 4 for 12 NeoPixel ring
+#define FLICKER_CHANCE 3 // increase this to increase the chances an individual flame will flicker
 
 uint32_t rez_range = 256*3;
 #define D_ false
@@ -102,13 +103,22 @@ void loop() {
       
       case 2: //decreasing
         new_brightness = flames[flame_count].brightness - flames[flame_count].step;
-        if (new_brightness <1){
-          flames[flame_count].state = 0; // bottomed out - reset to next flame
-          flames[flame_count].brightness = 0;
-           UpdateFlameColor(flame_count, 0);
+        // chance to flicker/rekindle:
+        if (random(new_brightness) < FLICKER_CHANCE){
+          // rekindle:
+          flames[flame_count].state = 1; //increase again
+          flames[flame_count].brightness = max(GetMaxBrightness(), flames[flame_count].brightness);
+          flames[flame_count].step = GetStepSize(); 
+        
         } else {
-          UpdateFlameColor(flame_count, new_brightness);
-           flames[flame_count].brightness = new_brightness;
+          if (new_brightness <1){
+            flames[flame_count].state = 0; // bottomed out - reset to next flame
+            flames[flame_count].brightness = 0;
+             UpdateFlameColor(flame_count, 0);
+          } else {
+            UpdateFlameColor(flame_count, new_brightness);
+             flames[flame_count].brightness = new_brightness;
+          }
         }
       break;
     }
@@ -167,9 +177,7 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
 
 void CreateNewFlame(byte flame_num){
   flames[flame_num].step = GetStepSize();
-//  flames[flame_num].max_brightness = random(rez_range/4) +  random(rez_range/4) + random(rez_range/4) + rez_range/4 +1; // bell curve
-//    flames[flame_num].max_brightness = random(rez_range*3/4) +  rez_range/4; // flat distribution
-    flames[flame_num].max_brightness = random(rez_range/2) +  rez_range/2; // brighter flat distribution
+ flames[flame_num].max_brightness = GetMaxBrightness();
 
   flames[flame_num].brightness = 0;
   flames[flame_num].state = 1;
@@ -181,5 +189,12 @@ void CreateNewFlame(byte flame_num){
 }
 
 int GetStepSize(){
-  return random(70)+1;
+   return random(70)+1;
+}
+int GetMaxBrightness(){
+  int retVal;
+//  retVal = random(rez_range/4) +  random(rez_range/4) + random(rez_range/4) + rez_range/4 +1; // bell curve
+//  retVal = random(rez_range*3/4) +  rez_range/4; // flat distribution
+    retVal = random(rez_range/2) +  rez_range/2; // brighter flat distribution
+    return retVal;
 }
