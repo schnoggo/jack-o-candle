@@ -63,12 +63,6 @@ struct flame_element{
 { SCALERVAL,  SCALERVAL*.3,  SCALERVAL*.5}
 };
 
-const int speeds[30] ={ 
-    1,1,1,2,2,2,3,3,3,4,
-    4,4,4,4,4,5,5,5,5,5,
-    6,6,6,7,7,8,8,10,10,20
-    };
-  
   
   
 void setup() {
@@ -86,7 +80,6 @@ void setup() {
 void loop() {
 
  for(byte flame_count=0; flame_count<NUMBER_OF_FLAMES; flame_count++) {
- // for(byte flame_count=0; flame_count<1; flame_count++) {
     switch(flames[flame_count].state){
       case 0: // reset
         CreateNewFlame(flame_count);
@@ -103,14 +96,12 @@ void loop() {
           UpdateFlameColor(flame_count, new_brightness);
           flames[flame_count].brightness = new_brightness;
         }
-      
+
       break;
       
       
       case 2: //decreasing
         new_brightness = flames[flame_count].brightness - flames[flame_count].step;
-       //   if ((0 == flame_count)){  Serial.println(new_brightness);}
-
         if (new_brightness <1){
           flames[flame_count].state = 0; // bottomed out - reset to next flame
           flames[flame_count].brightness = 0;
@@ -124,7 +115,7 @@ void loop() {
   
   }
    strip.show();
-   delay(29);
+   delay(22);
   
 } //loop()
 
@@ -146,53 +137,23 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
   
   new_brightness = min(new_brightness, flames[flame_num].max_brightness);
   
-  if ((D_) && (0 == flame_num)){  Serial.print("pre:( ");}
 
   for(byte rgb_channel=0; rgb_channel<3; rgb_channel++) {
     color_channel_value = flames[flame_num].rgb[rgb_channel];
-    if ((D_) && (0 == flame_num)){ Serial.print(color_channel_value); }
     color_channel_value = color_channel_value * (uint32_t)new_brightness; // keep it long
-        if ((D_) && (0 == flame_num)){
-      Serial.print(" [xNB="); 
-      Serial.print(color_channel_value); 
-      Serial.print(", ");
-    }
     color_channel_value = color_channel_value/(uint32_t)rez_range;
-    if ((D_) && (0 == flame_num)){
-      Serial.print(" /SCALE="); 
-      Serial.print(color_channel_value); 
-      Serial.print("]");
-    }
     rgb[rgb_channel] = max(0L,color_channel_value);
-    if ((D_) && (0 == flame_num)){
-      Serial.print("-"); 
-      Serial.print(rgb[rgb_channel]); 
-      Serial.print(", ");
-    }
   } // step through R G B
 
-  if ((D_) && (0 == flame_num)){
-    Serial.print(") bright:");
-    Serial.print(new_brightness);
-    Serial.print("/");
-    Serial.print(flames[flame_num].max_brightness);
-    Serial.print("  ");
-  }
 
 
   // spread possible values of 0 -768 across 3 pixels
-  if ((D_) && (0 == flame_num)){
-  //  Serial.print("scaled: ");
-   // Serial.print(" (");
-   Serial.println(" ");
-  }
-
   for(byte sub_pixel=0; sub_pixel<3; sub_pixel++) {
     for(byte i=0; i<3; i++) { // rgb
       acc = rgb[i]/3;
       byte d = rgb[i]%3;
       if (sub_pixel < d){
-        acc ++;
+        acc++;
       }
       scaleD_rgb[i] = acc;
       
@@ -205,33 +166,20 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
 
 
 void CreateNewFlame(byte flame_num){
-Serial.println("new flame");
   flames[flame_num].step = GetStepSize();
-//  flames[flame_num].max_brightness = rez_range/(random(5)+1);
-  flames[flame_num].max_brightness = random(rez_range/4) +  random(rez_range/4) + random(rez_range/4) + rez_range/4 +1;
+//  flames[flame_num].max_brightness = random(rez_range/4) +  random(rez_range/4) + random(rez_range/4) + rez_range/4 +1; // bell curve
+//    flames[flame_num].max_brightness = random(rez_range*3/4) +  rez_range/4; // flat distribution
+    flames[flame_num].max_brightness = random(rez_range/2) +  rez_range/2; // brighter flat distribution
+
   flames[flame_num].brightness = 0;
   flames[flame_num].state = 1;
   byte color_index = random(22);
   for(byte i=0; i<3; i++) {
     flames[flame_num].rgb[i] = flamecolors[color_index][i];
   }
-  /*
-  Serial.println("New Flame");
-  Serial.print("step: ");
-  Serial.println(flames[flame_num].step);
-  Serial.print("max_brightness: ");
-  Serial.println(flames[flame_num].max_brightness);  
-  Serial.print("color: (");
-  Serial.print(flames[flame_num].rgb[0]);
-  Serial.print(", ");
-  Serial.print(flames[flame_num].rgb[1]);
-  Serial.print(", ");
-  Serial.print(flames[flame_num].rgb[2]);
-  Serial.println(") ");
-  */
+ 
 }
 
 int GetStepSize(){
- // return speeds[random(30)];
-return random(70);
+  return random(70)+1;
 }
