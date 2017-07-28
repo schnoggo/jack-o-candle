@@ -7,9 +7,9 @@
 
 */
 
-#define PIN 2 // Which pin are those Neopixels hook up to?
+#define PIN 2              // Which pin are those Neopixels hook up to?
 #define NUMBER_OF_FLAMES 5 // depends on number of neopixel triplets. 5 for 16 NeoPixel ring. 4 for 12 NeoPixel ring
-#define FLICKER_CHANCE 3 // increase this to increase the chances an individual flame will flicker
+#define FLICKER_CHANCE 3   // increase this to increase the chances an individual flame will flicker
 
 
 // Parameter 1 = number of pixels in strip
@@ -31,7 +31,7 @@ struct flame_element{
   int max_brightness;
   long rgb[3];
   byte state;
-  } flames[5];
+  } flames[NUMBER_OF_FLAMES];
   
   int new_brightness = 0;
   unsigned long rgb[3]; //reusable temporary array
