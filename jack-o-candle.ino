@@ -1,6 +1,17 @@
 #include <Adafruit_NeoPixel.h>
 
-#define PIN 2	
+/*
+ 5 "flames" of 3 pixels each.
+ Each flame can have a brightness of 0 to 254 (play with this scale)
+ Eventually, light up center pixel of three first then the sides. This version will just distribute amongst the 3 pixels.
+
+*/
+
+#define PIN 2              // Which pin are those Neopixels hook up to?
+#define NUMBER_OF_FLAMES 5 // depends on number of neopixel triplets. 5 for 16 NeoPixel ring. 4 for 12 NeoPixel ring
+#define FLAME_WIDTH 3      // How wide are the flames (in LEDs)
+#define FLICKER_CHANCE 3   // increase this to increase the chances an individual flame will flicker
+
 
 // Parameter 1 = number of pixels in strip
 // Parameter 2 = pin number (most are valid)
@@ -9,17 +20,7 @@
 //   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
 //   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
 //   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(16, 2, NEO_GRB + NEO_KHZ800);
-
-/*
- 5 "flames" of 3 pixels each.
- Each flame can have a brightness of 0 to 254 (play with this scale)
- Eventually, light up center pixel of three first then the sides. This version will just distribute amongst the 3 pixels.
-
-*/
-
-#define NUMBER_OF_FLAMES 5 // depends on number of neopixel triplets. 5 for 16 NeoPixel ring. 4 for 12 NeoPixel ring
-#define FLICKER_CHANCE 3 // increase this to increase the chances an individual flame will flicker
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMBER_OF_FLAMES * FLAME_WIDTH, PIN, NEO_GRB + NEO_KHZ800);
 
 uint32_t rez_range = 256*3;
 #define D_ false
@@ -31,7 +32,7 @@ struct flame_element{
   int max_brightness;
   long rgb[3];
   byte state;
-  } flames[5];
+  } flames[NUMBER_OF_FLAMES];
   
   int new_brightness = 0;
   unsigned long rgb[3]; //reusable temporary array
@@ -158,7 +159,7 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
 
 
   // spread possible values of 0 -768 across 3 pixels
-  for(byte sub_pixel=0; sub_pixel<3; sub_pixel++) {
+  for(byte sub_pixel=0; sub_pixel<FLAME_WIDTH; sub_pixel++) {
     for(byte i=0; i<3; i++) { // rgb
       acc = rgb[i]/3;
       byte d = rgb[i]%3;
@@ -169,7 +170,7 @@ void UpdateFlameColor(byte flame_num, int new_brightness){
       
     }
     c = strip.Color(scaleD_rgb[0],scaleD_rgb[1], scaleD_rgb[2]);
-    strip.setPixelColor(flame_num*3 + sub_pixel, c);
+    strip.setPixelColor(flame_num * FLAME_WIDTH + sub_pixel, c);
   }
   
 }
